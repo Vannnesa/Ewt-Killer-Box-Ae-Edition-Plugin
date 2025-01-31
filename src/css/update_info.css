@@ -1,0 +1,25 @@
+.update-l-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    height: 100%;
+    width: 100%;
+    align-items: center;
+}
+
+.update-l-new-ver-text {
+    font-size: 25px;
+    font-weight: bolder;
+}
+
+.update-l-new-ver-detail-container {
+    margin-top: 5px;
+    width: 100%;
+    box-shadow: 0 0 5px gray;
+    padding: 5px;
+    border-radius: 5px;
+    line-height: 16px;
+    font-weight: bold;
+
+}
+
