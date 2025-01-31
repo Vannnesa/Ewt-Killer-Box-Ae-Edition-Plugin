@@ -2,3 +2,5 @@ sample.json
 node_modules
 dist
 src/css/*.d.ts
+.idea
+.vscode
