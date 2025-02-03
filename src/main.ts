@@ -1,3 +1,8 @@
+// ==UserScript==
+// @match        *://*/*
+// @run-at       document-end
+// ==/UserScript==
+
 import $ from "jquery";
 import { LogSystem } from './pojo/logsystem';
 import { UserInfoInterface } from "./dao/UserInfoDao";
@@ -46,11 +51,15 @@ async function openBox() {
     if (isOnPractisePage()) {
         viewComponent = new HomeworkView(attr["paperId"], attr["bizCode"], attr["platform"], attr["homeworkId"]).surfaceComponent();
     } else if (isInTaskPage()) {
-        viewComponent = new TaskView().build(attr["homeworkId"]).then(view => view.surfaceComponent());
+        // 假设 build 方法返回的是同步 TaskView 实例
+        const taskView = new TaskView().build(attr["homeworkId"]);
+        viewComponent = Promise.resolve(taskView.surfaceComponent());
     } else if (isInCoursePage()) {
-        viewComponent = new CourseView().build().then(view => view.surfaceComponent());
+        const courseView = new CourseView().build();
+        viewComponent = Promise.resolve(courseView.surfaceComponent());
     } else if (isInHolidayFrame()) {
-        viewComponent = new SceneTaskView().build(attr["sceneId"]).then(view => view.surfaceComponent());
+        const sceneTaskView = new SceneTaskView().build(attr["sceneId"]);
+        viewComponent = Promise.resolve(sceneTaskView.surfaceComponent());
     } else {
         viewComponent = Promise.resolve(NoPage());
     }
@@ -59,22 +68,32 @@ async function openBox() {
 }
 
 async function getUser(): Promise<User> {
-    let userInterface = new UserInfoInterface();
-    const [dat1, dat0, apidat] = await Promise.all([
-        userInterface.getSchoolInfo(),
-        userInterface.getBasicUserInfo(),
-        userInterface.getApiUserInfo()
-    ]);
+    const userInterface = new UserInfoInterface();
+    // 转换为 any 类型，确保可以用索引访问
+    const dat1: any = await userInterface.getSchoolInfo();
+    const dat0: any = await userInterface.getBasicUserInfo();
+    const apidat: any = await userInterface.getApiUserInfo();
 
-    return {
-        id: dat0?.["userId"],
-        name: dat0?.["realName"],
-        photoUrl: dat0?.["photoUrl"],
-        token: getUserToken(),
-        school: dat1?.schoolId,
-        isvip: apidat?.["isvip"] || false,
-        opcount: apidat?.["opcount"] || 0,
-    };
+    if (dat0 != null && dat1 != null) {
+        return {
+            id: dat0["userId"],
+            name: dat0["realName"],
+            photoUrl: dat0["photoUrl"],
+            token: getUserToken(),
+            school: dat1.schoolId,
+            isvip: apidat["isvip"],
+            opcount: apidat["opcount"],
+        };
+    } else {
+        return {
+            id: undefined,
+            name: undefined,
+            photoUrl: undefined,
+            token: undefined,
+            school: undefined,
+            isvip: false
+        };
+    }
 }
 
 export async function updateUserInfo() {
@@ -109,8 +128,8 @@ async function openUpdateAndVersionBox() {
     }
 }
 
-// 使用事件委托
-// 调用 getMenuBtn 时，不直接绑定 click 事件，而是在按钮上添加统一类及 data 属性保存动作
+// —— 使用事件委托优化 ——
+// 调用 getMenuBtn 时，不直接绑定 click 事件，而是为按钮添加统一的 CSS 类及 data 保存动作
 let open = getMenuBtn("red", $(open_img), "打开工具箱", null);
 open.addClass("tm-menu-btn").data("action", async () => { await openBox(); });
 
@@ -155,11 +174,10 @@ $(async () => {
     renderWindowMenu([open, ikbtn, orderHistoryBtn, logbtn]);
 });
 
+// 委托事件：所有带有 .tm-menu-btn 类的按钮点击时均调用 data 中保存的 action
 $(document).on("click", ".tm-menu-btn", function(e) {
     const action = $(this).data("action");
     if (typeof action === "function") {
         action.call(this, e);
     }
 });
-
-// 主要优化:DOM绘制逻辑重写 event解绑优化(事件委托参考Js文档)

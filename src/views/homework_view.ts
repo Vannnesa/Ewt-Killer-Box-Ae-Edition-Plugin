@@ -302,7 +302,7 @@ export class HomeworkView extends View {
         root.append($(`<div style="text-align: center;">需要花费 1 点数解锁此试卷的解析.<br>在此次解锁之后,下次将不用再次解锁这份试卷,而可以直接看到解析.</div>`));
         const btn = $(`<div class="${ordiBtn}">解锁</div>`);
         root.append(btn);
-        // 此处可直接绑定（或也改为委托绑定）——此处按钮较少，不易丢失
+        // 此处按钮较少，可直接绑定事件
         btn.on("click", () => {
             btn.text("请等待...").off("click");
             this.refreshToF();
